@@ -200,17 +200,26 @@ X_RESULT InputSystem::GetState(uint32_t user_index, X_INPUT_STATE* out_state) {
   }
 
   if (first_result) {
+    if (user_index < pc_menu_inputs_.size()) pc_menu_inputs_[user_index].Reset();
     return any_connected ? X_ERROR_EMPTY : X_ERROR_DEVICE_NOT_CONNECTED;
   }
 
   const uint16_t menu_chord_buttons = ChordMaskFromSpec(REXCVAR_GET(menu_chord));
-  const bool menu_chord_down =
-      menu_chord_buttons != 0 &&
-      (static_cast<uint16_t>(merged.gamepad.buttons) & menu_chord_buttons) == menu_chord_buttons;
-  if (menu_chord_down && !menu_chord_down_ && menu_chord_callback_) {
-    menu_chord_callback_();
-  }
-  menu_chord_down_ = menu_chord_down;
+  if (pc_pause_eligible_ && user_index < pc_menu_inputs_.size()) {
+    const auto routed = pc_menu_inputs_[user_index].Update(
+        static_cast<uint16_t>(merged.gamepad.buttons), pc_pause_eligible_(),
+        menu_chord_buttons, static_cast<bool>(menu_chord_callback_));
+    merged.gamepad.buttons = routed.guest_buttons;
+    if (routed.open_menu) menu_chord_callback_();
+  } else {
+    const bool menu_chord_down =
+        menu_chord_buttons != 0 &&
+        (static_cast<uint16_t>(merged.gamepad.buttons) & menu_chord_buttons) == menu_chord_buttons;
+    if (menu_chord_down && !menu_chord_down_ && menu_chord_callback_) {
+      menu_chord_callback_();
+    }
+    menu_chord_down_ = menu_chord_down;
+    }
 
   if (active_callback_ && !active_callback_()) {
     std::memset(&merged.gamepad, 0, sizeof(merged.gamepad));

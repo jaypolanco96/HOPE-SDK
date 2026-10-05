@@ -32,6 +32,8 @@
 #include <rex/system/xtypes.h>
 
 REXCVAR_DEFINE_UINT32(user_language, 1, "Kernel", "User's language ID");
+REXCVAR_DEFINE_BOOL(xam_pc_local_player, false, "Kernel",
+                    "Use the selected offline local player without a console sign-in UI");
 REXCVAR_DEFINE_UINT32(xam_signin_ui_auto_close_ms, 1200, "Kernel",
                       "Duration to keep the stubbed sign-in UI active before auto-closing");
 
@@ -535,6 +537,16 @@ u32 XamUserAreUsersFriends_entry(u32 user_index, u32 unk1, u32 unk2, mapped_u32 
 u32 XamShowSigninUI_entry(u32 unk, u32 unk_mask) {
   // Mask values vary. Probably matching user types? Local/remote?
   KernelState* kernel_state = REX_KERNEL_STATE();
+
+  if (REXCVAR_GET(xam_pc_local_player) && kernel_state->user_profile()) {
+    // Preserve the selected identity/save ownership. No online identity or
+    // account is fabricated, and no delayed thread keeps a raw kernel pointer.
+    rex::cvar::SetFlagByName("user_profile_signed_in", "true");
+    rex::cvar::SetFlagByName("user_live_signed_in", "false");
+    kernel_state->BroadcastNotification(0x0000000A, 1); // local player state changed
+    kernel_state->BroadcastNotification(0x00000009, 0); // system UI already closed
+    return X_ERROR_SUCCESS;
+  }
 
   // Showing sign-in is a system-UI operation. It should not imply that a local
   // profile has signed in; titles observe the UI notification and then continue

@@ -1,4 +1,6 @@
 #pragma once
+#include <array>
+#include <rex/input/pc_menu_input.h>
 /**
  ******************************************************************************
  * Xenia : Xbox 360 Emulator Research Project                                 *
@@ -38,6 +40,7 @@ class InputSystem : public system::IInputSystem {
   void AttachWindow(rex::ui::Window* window);
   void SetActiveCallback(std::function<bool()> callback);
   void SetMenuChordCallback(std::function<void()> callback);
+  void SetPcPauseMenuEligibility(std::function<bool()> callback) { pc_pause_eligible_ = std::move(callback); }
 
   X_RESULT GetCapabilities(uint32_t user_index, uint32_t flags, X_INPUT_CAPABILITIES* out_caps);
   X_RESULT GetState(uint32_t user_index, X_INPUT_STATE* out_state);
@@ -56,6 +59,8 @@ class InputSystem : public system::IInputSystem {
   std::function<bool()> active_callback_ = nullptr;
   std::function<void()> menu_chord_callback_ = nullptr;
   bool menu_chord_down_ = false;
+  std::function<bool()> pc_pause_eligible_;
+  std::array<PcMenuInput, 4> pc_menu_inputs_;
 };
 
 /// Create a default InputSystem with SDL + NOP drivers.

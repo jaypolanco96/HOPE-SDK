@@ -157,7 +157,7 @@ constexpr std::array<CategoryInfo, 8> kCategories = {{
     {"Controls", "Controller, mouse and keyboard input settings."},
     {"Audio", "Sound output settings."},
     {"Saves", "Manage saves for the selected profile. Removal keeps a recovery copy."},
-    {"Profile", "Local player profile and sign-in."},
+    {"Player", "Offline player name and save identity. No console account is needed."},
     {"System", "Game language, pending changes and closing the settings."},
 }};
 
@@ -1322,7 +1322,7 @@ void SimpleSettingsDialog::BuildRows(std::vector<RowSpec>& rows, int category) {
       if (return_home_confirmation_) {
         action("Keep Playing", "Return to this session.",
                [this] { return_home_confirmation_ = false; });
-        action("Confirm Return to HOPE Home", "Close this session and open the launcher. Wait for the saving indicator to finish. Unsaved progress may be lost.",
+        action("Confirm Return to Home Screen", "Close this session and open the launcher. Wait for the saving indicator to finish. Unsaved progress may be lost.",
                [this] { return_home_confirmation_ = false; Hide(); if (return_home_) return_home_(); }, true);
       } else if (quit_confirmation_) {
         action("Cancel", "Keep playing. Unsaved progress can be lost when quitting.",
@@ -1331,7 +1331,9 @@ void SimpleSettingsDialog::BuildRows(std::vector<RowSpec>& rows, int category) {
                [this] { Hide(); if (close_game_) close_game_(); }, true);
       } else {
         action("Resume Game", "Return to your current session.", [this] { Hide(); });
-        if (return_home_) action("Return to HOPE Home", "Close this session and return to the launcher, even with an existing career. Your saved career is retained.",
+        if (game_activities_) action("Challenges, Map & Replay", "Open the original game's activities menu. This screen still uses the game's original presentation.",
+               [this] { Hide(); game_activities_(); });
+        if (return_home_) action("Return to Home Screen", "Close this session and open the PC home screen to choose a career or start fresh. Saved progress is retained; finish saving first.",
                [this] { return_home_confirmation_ = true; row_index_ = 0; });
         action("Graphics Settings", "Adjust ambient occlusion, anti-aliasing, fog and other effects.",
                [this] { category_ = rail_sel_ = 2; row_index_ = 0; });
@@ -1967,7 +1969,7 @@ void SimpleSettingsDialog::BuildRows(std::vector<RowSpec>& rows, int category) {
         row.kind = RowSpec::kEnum;
         row.label = "Controller Backend";
         row.desc =
-            "Which API reads controllers. XInput supports Xbox controllers; "
+            "Which API reads controllers. XInput supports compatible controllers; "
             "SDL also supports PlayStation, Switch and most generic "
             "controllers without extra software. Applies after restarting "
             "the game.";
@@ -2137,11 +2139,12 @@ void SimpleSettingsDialog::BuildRows(std::vector<RowSpec>& rows, int category) {
       break;
     }
     case 6: {  // Profile
-      header("Local Profile");
+      const bool pc_local = HasCvar("xam_pc_local_player") && rex::cvar::Query<bool>("xam_pc_local_player");
+      header(pc_local ? "Offline Player" : "Local Profile");
       {
         RowSpec row;
         row.kind = RowSpec::kEnum;
-        row.label = "Profile";
+        row.label = "Player";
         row.desc = "Select the local player profile used for saves.";
         for (const auto& profile : profiles_.profiles) {
           row.options.push_back(profile.gamertag);
@@ -2158,13 +2161,13 @@ void SimpleSettingsDialog::BuildRows(std::vector<RowSpec>& rows, int category) {
       {
         RowSpec row;
         row.kind = RowSpec::kText;
-        row.label = "Gamertag";
+        row.label = "Player Name";
         row.desc = "Display name for this profile. Select to edit with the keyboard.";
         row.text_buf = gamertag_buf_;
         row.text_buf_size = sizeof(gamertag_buf_);
         rows.push_back(std::move(row));
       }
-      {
+      if (!pc_local) {
         RowSpec row;
         row.kind = RowSpec::kEnum;
         row.label = "Local Sign-in";
@@ -2176,7 +2179,7 @@ void SimpleSettingsDialog::BuildRows(std::vector<RowSpec>& rows, int category) {
       {
         RowSpec row;
         row.kind = RowSpec::kAction;
-        row.label = "Save Profile";
+        row.label = "Save Player";
         row.desc = "Save the profile changes above and apply them to the running game.";
         row.desc_extra = profile_save_status_;
         row.action = [this] { SaveProfile(); };
@@ -2736,7 +2739,7 @@ void SimpleSettingsDialog::OnDraw(ImGuiIO& io) {
   dl->AddRectFilled(ImVec2(0.0f, 0.0f), io.DisplaySize, IM_COL32(6, 9, 11, 133));
 
   // ---- Title ----
-  dl->AddText(bold, title_size, ImVec2(Snap(rail_x), title_y), kColText, "HOPE - PC Menu");
+  dl->AddText(bold, title_size, ImVec2(Snap(rail_x), title_y), kColText, "SKATE 3 / PC HOME");
   if (pending) {
     const char* chip_text = "RESTART REQUIRED TO APPLY";
     float chip_size = font_px(14.0f * s);
