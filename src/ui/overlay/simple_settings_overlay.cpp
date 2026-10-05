@@ -2720,7 +2720,7 @@ void SimpleSettingsDialog::OnDraw(ImGuiIO& io) {
   dl->AddRectFilled(ImVec2(0.0f, 0.0f), io.DisplaySize, IM_COL32(6, 9, 11, 133));
 
   // ---- Title ----
-  dl->AddText(bold, title_size, ImVec2(Snap(rail_x), title_y), kColText, "Skate 3 - PC Menu");
+  dl->AddText(bold, title_size, ImVec2(Snap(rail_x), title_y), kColText, "HOPE - PC Menu");
   if (pending) {
     const char* chip_text = "RESTART REQUIRED TO APPLY";
     float chip_size = font_px(14.0f * s);
