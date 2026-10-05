@@ -122,12 +122,12 @@ endif()
 # Global compile options
 add_compile_options(
     -fno-strict-aliasing
-    -ffp-model=strict
+    $<IF:$<STREQUAL:${CMAKE_CXX_COMPILER_FRONTEND_VARIANT},MSVC>,/clang:-ffp-model=strict,-ffp-model=strict>
     $<$<CONFIG:DEBUG>:-g>
     $<$<CONFIG:DEBUG>:-O0>
     $<$<CONFIG:RELEASE>:-O3>
     $<$<CONFIG:RELEASE>:-DNDEBUG>
-    -fno-char8_t
+    $<IF:$<STREQUAL:${CMAKE_CXX_COMPILER_FRONTEND_VARIANT},MSVC>,/clang:-fno-char8_t,-fno-char8_t>
 )
 
 # Platform detection (supports AMD64 and ARM64)
@@ -219,8 +219,10 @@ add_subdirectory(thirdparty)
 
 # Enable warnings after thirdparty
 add_compile_options(
-    -Wall
-    -Wextra
+    # clang-cl interprets -Wall as /Wall (-Weverything), unlike clang++.
+    # /W4 supplies the intended Wall/Wextra diagnostics for this frontend.
+    $<IF:$<STREQUAL:${CMAKE_CXX_COMPILER_FRONTEND_VARIANT},MSVC>,/W4,-Wall>
+    $<$<NOT:$<STREQUAL:${CMAKE_CXX_COMPILER_FRONTEND_VARIANT},MSVC>>:-Wextra>
 )
 
 include_directories(${REXGLUE_ROOT}/include)
