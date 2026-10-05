@@ -54,7 +54,19 @@ constexpr std::array<std::string_view, 7> kCoreSimpleSettingsCvars = {
 // Optional cvars persisted when the host defines them (HasCvar-gated: app
 // cvars like the native-renderer knobs don't exist in every embedder, and
 // backend/platform cvars don't exist in every build).
-constexpr std::array<std::string_view, 26> kOptionalSimpleSettingsCvars = {
+constexpr std::array<std::string_view, 38> kOptionalSimpleSettingsCvars = {
+    "skate3_native_render_scene_hdr",
+    "skate3_native_render_scene_ssr",
+    "skate3_native_render_scene_ssr_steps",
+    "skate3_native_render_scene_ssr_intensity",
+    "skate3_native_render_scene_ssao_intensity",
+    "skate3_native_render_scene_ssao_radius",
+    "skate3_native_render_scene_bloom_intensity",
+    "skate3_native_render_scene_shafts_steps",
+    "skate3_native_render_scene_shadow_pcss_sun_deg",
+    "skate3_native_render_scene_tex_mips",
+    "skate3_native_render_scene_decals",
+    "skate3_native_render_scene_quadlists",
     "skate3_native_render_scene",
     "skate3_native_render_scene_msaa",
     "skate3_native_render_scene_shadows",
@@ -81,6 +93,30 @@ constexpr std::array<std::string_view, 26> kOptionalSimpleSettingsCvars = {
     "audio_mute",
     "audio_device_sample_frames",
     "user_language"};
+
+struct AdvancedToggle {
+  const char* cvar; const char* label; const char* description; bool fallback;
+};
+constexpr std::array<AdvancedToggle, 5> kAdvancedToggles = {{
+ {"skate3_native_render_scene_hdr", "HDR Lighting Pipeline", "Internal high precision lighting. Required by bloom, reflections and atmosphere. Does not enable HDR monitor output.", true},
+ {"skate3_native_render_scene_ssr", "Reflections (Experimental)", "Screen-space reflections on glass and water. Requires HDR lighting. May show noise and smearing.", false},
+ {"skate3_native_render_scene_tex_mips", "Texture Mipmaps", "Filters distant textures to reduce shimmering.", true},
+ {"skate3_native_render_scene_decals", "Graffiti and Decals", "Authored surface artwork and paint.", true},
+ {"skate3_native_render_scene_quadlists", "Particles (Experimental)", "Incomplete particle draw path: sprite textures are missing and particles may appear as floating white squares. Off by default.", false}
+}};
+struct AdvancedRange {
+ const char* cvar; const char* label; const char* description;
+ float minimum, maximum, step, fallback; bool integer;
+};
+constexpr std::array<AdvancedRange, 7> kAdvancedRanges = {{
+ {"skate3_native_render_scene_ssr_steps", "Reflection Quality", "Ray steps per pixel. More costs GPU time. Requires reflections and HDR lighting.", 8, 64, 1, 48, true},
+ {"skate3_native_render_scene_ssr_intensity", "Reflection Strength", "Screen-space contribution strength. Requires reflections and HDR lighting.", 0, 2, .05f, 1, false},
+ {"skate3_native_render_scene_ssao_intensity", "AO Strength", "Contact shading intensity. Requires ambient occlusion.", 0, 4, .1f, 1.4f, false},
+ {"skate3_native_render_scene_ssao_radius", "AO Radius", "World-space size of contact shading. Requires ambient occlusion.", .1f, 8, .1f, .8f, false},
+ {"skate3_native_render_scene_bloom_intensity", "Bloom Strength", "Glow around bright highlights. Requires bloom and HDR lighting.", 0, 2, .005f, .025f, false},
+ {"skate3_native_render_scene_shafts_steps", "Sun-shaft Quality", "Volumetric ray steps. More costs GPU time. Requires shafts, shadows and HDR lighting.", 8, 64, 1, 64, true},
+ {"skate3_native_render_scene_shadow_pcss_sun_deg", "Shadow Softness", "Sun angular diameter. Larger values soften edges. Requires PCSS shadows.", .1f, 8, .1f, 2.5f, false}
+}};
 
 // MSAA sample counts for the native scene renderer.
 constexpr std::array<const char*, 4> kMsaaLabels = {"Off", "2x", "4x", "8x"};
@@ -1076,6 +1112,16 @@ void SimpleSettingsDialog::LoadSettingsFromCvars() {
   // Sun shafts and atmospheric haze have independent controls.
   volumetrics_ = (HasCvar("skate3_native_render_scene_shafts") &&
                   rex::cvar::Query<bool>("skate3_native_render_scene_shafts"));
+  for (size_t i=0; i<kAdvancedToggles.size(); ++i) {
+    const auto& option=kAdvancedToggles[i];
+    advanced_graphics_flags_[i]=HasCvar(option.cvar) ? rex::cvar::Query<bool>(option.cvar) : option.fallback;
+  }
+  for (size_t i=0; i<kAdvancedRanges.size(); ++i) {
+    const auto& option=kAdvancedRanges[i];
+    float value=option.fallback;
+    if (HasCvar(option.cvar)) value=option.integer ? float(rex::cvar::Query<int32_t>(option.cvar)) : float(rex::cvar::Query<double>(option.cvar));
+    advanced_graphics_values_[i]=std::clamp(value,option.minimum,option.maximum);
+  }
   draw_distance_index_ = DrawDistanceIndexFromCvar();
   stream_probe_index_ = StreamProbeIndexFromCvar();
   mode_indicator_ = HasCvar("skate3_native_render_mode_indicator") &&
@@ -1780,6 +1826,43 @@ void SimpleSettingsDialog::BuildRows(std::vector<RowSpec>& rows, int category) {
       live_toggle("Atmospheric Haze",
                   "Extra atmospheric scattering, separate from distance fog and sun shafts. Native renderer only; applies immediately.",
                   "skate3_native_render_scene_haze", haze_);
+      header("Advanced Native Graphics");
+      for (size_t i=0; i<kAdvancedToggles.size(); ++i) {
+        const auto& option=kAdvancedToggles[i];
+        if (!HasCvar(option.cvar)) continue;
+        RowSpec row; row.kind=RowSpec::kEnum; row.label=option.label;
+        row.desc=option.description; row.enabled=renderer_native_; row.options={"Off","On"};
+        row.flag=&advanced_graphics_flags_[i];
+        row.on_enum_change=[this,i](int value) {
+          SetBoolCvar(kAdvancedToggles[i].cvar,value!=0); SaveSimpleSettingsConfig(config_path_);
+        };
+        row.reset=[this,i] {
+          const auto& o=kAdvancedToggles[i];
+          advanced_graphics_flags_[i]=CvarDefaultBool(o.cvar,o.fallback);
+          SetBoolCvar(o.cvar,advanced_graphics_flags_[i]); SaveSimpleSettingsConfig(config_path_);
+        };
+        rows.push_back(std::move(row));
+      }
+      for (size_t i=0; i<kAdvancedRanges.size(); ++i) {
+        const auto& option=kAdvancedRanges[i];
+        if (!HasCvar(option.cvar)) continue;
+        RowSpec row; row.kind=RowSpec::kSlider; row.label=option.label;
+        row.desc=option.description; row.enabled=renderer_native_;
+        row.value=&advanced_graphics_values_[i]; row.min=option.minimum; row.max=option.maximum; row.step=option.step;
+        row.fmt=option.integer ? "%.0f" : "%.3f";
+        row.on_value_change=[this,i] {
+          const auto& o=kAdvancedRanges[i];
+          auto& value=advanced_graphics_values_[i]; value=std::clamp(value,o.minimum,o.maximum);
+          const std::string literal=o.integer ? std::to_string(int32_t(std::lround(value))) : std::to_string(value);
+          rex::cvar::SetFlagByName(o.cvar,literal); SaveSimpleSettingsConfig(config_path_);
+        };
+        row.reset=[this,i] {
+          const auto& o=kAdvancedRanges[i]; advanced_graphics_values_[i]=float(CvarDefaultDouble(o.cvar,o.fallback));
+          rex::cvar::SetFlagByName(o.cvar,o.integer ? std::to_string(int32_t(std::lround(advanced_graphics_values_[i]))) : std::to_string(advanced_graphics_values_[i]));
+          SaveSimpleSettingsConfig(config_path_);
+        };
+        rows.push_back(std::move(row));
+      }
       if (HasDrawDistanceCvars()) {
         RowSpec row;
         row.kind = RowSpec::kEnum;

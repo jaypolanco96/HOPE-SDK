@@ -6,6 +6,7 @@
 #pragma once
 
 #include <cstdint>
+#include <array>
 #include <filesystem>
 #include <functional>
 #include <string>
@@ -139,6 +140,8 @@ class SimpleSettingsDialog final : public ImGuiDialog {
   // Live setting values (hot cvars, applied and saved on change).
   bool renderer_native_ = true;
   bool ssao_ = true;
+  std::array<bool, 5> advanced_graphics_flags_{};
+  std::array<float, 7> advanced_graphics_values_{};
   bool ssao_full_res_ = false;
   bool fog_ = true;
   bool haze_ = true;
