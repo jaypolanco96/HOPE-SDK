@@ -1271,7 +1271,9 @@ void SimpleSettingsDialog::SaveVideo() {
 
 void SimpleSettingsDialog::SaveProfile() {
   if (save_profile_) {
-    save_profile_(profiles_.selected_index, gamertag_buf_, profile_signed_in_);
+    profile_save_status_ = save_profile_(profiles_.selected_index, gamertag_buf_, profile_signed_in_);
+    if (!profile_save_status_.empty()) return;
+    profile_save_status_ = "Profile changes saved and applied.";
   }
   ReloadProfiles();
   saves_ = load_saves_ ? load_saves_() : std::vector<SimpleSaveInfo>{};
@@ -2166,6 +2168,7 @@ void SimpleSettingsDialog::BuildRows(std::vector<RowSpec>& rows, int category) {
         row.kind = RowSpec::kAction;
         row.label = "Save Profile";
         row.desc = "Save the profile changes above and apply them to the running game.";
+        row.desc_extra = profile_save_status_;
         row.action = [this] { SaveProfile(); };
         rows.push_back(std::move(row));
       }

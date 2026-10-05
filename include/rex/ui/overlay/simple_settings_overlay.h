@@ -48,7 +48,7 @@ class SimpleSettingsDialog final : public ImGuiDialog {
  public:
   using LoadProfilesCallback = std::function<SimpleProfileState()>;
   using SaveProfileCallback =
-      std::function<void(int selected_index, std::string gamertag, bool signed_in)>;
+      std::function<std::string(int selected_index, std::string gamertag, bool signed_in)>;
   using CloseSettingsCallback = std::function<void()>;
   using CloseGameCallback = std::function<void()>;
   using RestartGameCallback = std::function<void()>;
@@ -107,6 +107,7 @@ class SimpleSettingsDialog final : public ImGuiDialog {
   int save_index_ = 0;
   std::string delete_confirmation_;
   std::string save_error_;
+  std::string profile_save_status_;
   bool quit_confirmation_ = false;
   SimpleProfileState profiles_;
   bool visible_ = false;
