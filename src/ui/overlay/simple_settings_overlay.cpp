@@ -151,7 +151,7 @@ struct CategoryInfo {
   const char* desc;
 };
 constexpr std::array<CategoryInfo, 8> kCategories = {{
-    {"Main Menu", "Resume, restart, or quit to desktop. The game continues running behind this PC menu."},
+    {"HOPE Menu", "Resume, return to HOPE Home, restart, or quit. The game continues running behind this PC menu."},
     {"Display", "Display, resolution and framerate settings."},
     {"Graphics", "Anti-aliasing, ambient occlusion, fog, lighting and shadows."},
     {"Controls", "Controller, mouse and keyboard input settings."},
@@ -1003,6 +1003,7 @@ void SimpleSettingsDialog::Show() {
   LoadSettingsFromCvars();
   category_ = 0;
   quit_confirmation_ = false;
+  return_home_confirmation_ = false;
   delete_confirmation_.clear();
   save_error_.clear();
   saves_ = load_saves_ ? load_saves_() : std::vector<SimpleSaveInfo>{};
@@ -1029,6 +1030,7 @@ void SimpleSettingsDialog::ShowMainMenu() {
   row_index_ = 0;
   zone_ = FocusZone::kRail;
   quit_confirmation_ = false;
+  return_home_confirmation_ = false;
   delete_confirmation_.clear();
   content_scroll_ = content_scroll_anim_ = 0.0f;
   highlight_anim_y_ = rail_anim_y_ = -1.0f;
@@ -1135,9 +1137,10 @@ void SimpleSettingsDialog::NavigateBack() {
   if (!visible_) {
     return;
   }
-  if (!delete_confirmation_.empty() || quit_confirmation_) {
+  if (!delete_confirmation_.empty() || quit_confirmation_ || return_home_confirmation_) {
     delete_confirmation_.clear();
     quit_confirmation_ = false;
+    return_home_confirmation_ = false;
     return;
   }
   if (editing_text_) {
@@ -1316,18 +1319,25 @@ void SimpleSettingsDialog::BuildRows(std::vector<RowSpec>& rows, int category) {
         row.danger = danger;
         rows.push_back(std::move(row));
       };
-      if (quit_confirmation_) {
+      if (return_home_confirmation_) {
+        action("Keep Playing", "Return to this session.",
+               [this] { return_home_confirmation_ = false; });
+        action("Confirm Return to HOPE Home", "Close this session and open the launcher. Wait for the saving indicator to finish. Unsaved progress may be lost.",
+               [this] { return_home_confirmation_ = false; Hide(); if (return_home_) return_home_(); }, true);
+      } else if (quit_confirmation_) {
         action("Cancel", "Keep playing. Unsaved progress can be lost when quitting.",
                [this] { quit_confirmation_ = false; });
         action("Confirm Quit to Desktop", "Close the game. Wait for the game's saving indicator to finish first.",
                [this] { Hide(); if (close_game_) close_game_(); }, true);
       } else {
         action("Resume Game", "Return to your current session.", [this] { Hide(); });
+        if (return_home_) action("Return to HOPE Home", "Close this session and return to the launcher, even with an existing career. Your saved career is retained.",
+               [this] { return_home_confirmation_ = true; row_index_ = 0; });
         action("Graphics Settings", "Adjust ambient occlusion, anti-aliasing, fog and other effects.",
                [this] { category_ = rail_sel_ = 2; row_index_ = 0; });
         action("Manage Saves", "View and remove saves for the selected profile.",
                [this] { category_ = rail_sel_ = 5; row_index_ = 0; });
-        action("Restart Game", "Restart from the title screen. Unsaved progress may be lost; finish saving first.",
+        action("Restart Game", "Relaunch the game; an existing career may load again. To choose or create a career, return to HOPE Home. Finish saving first.",
                [this] { quit_confirmation_ = false; Hide(); if (restart_game_) restart_game_(); });
         action("Quit to Desktop", "Close the game after confirmation.",
                [this] { quit_confirmation_ = true; row_index_ = 0; }, true);
@@ -2433,9 +2443,10 @@ void SimpleSettingsDialog::OnDraw(ImGuiIO& io) {
 
   // ---- Input ----
   NavIntents in = GatherInput(io);
-  if (in.back && (!delete_confirmation_.empty() || quit_confirmation_)) {
+  if (in.back && (!delete_confirmation_.empty() || quit_confirmation_ || return_home_confirmation_)) {
     delete_confirmation_.clear();
     quit_confirmation_ = false;
+    return_home_confirmation_ = false;
     in.back = false;
   }
   if (editing_text_) {
@@ -2453,6 +2464,7 @@ void SimpleSettingsDialog::OnDraw(ImGuiIO& io) {
   if (in.category_prev || in.category_next) {
     delete_confirmation_.clear();
     quit_confirmation_ = false;
+    return_home_confirmation_ = false;
     category_ = (category_ + (in.category_next ? 1 : category_count - 1)) % category_count;
     rail_sel_ = category_;
     row_index_ = 0;
@@ -2463,6 +2475,7 @@ void SimpleSettingsDialog::OnDraw(ImGuiIO& io) {
   if (zone_ == FocusZone::kRail && in.move_y != 0) {
     delete_confirmation_.clear();
     quit_confirmation_ = false;
+    return_home_confirmation_ = false;
     rail_sel_ = std::clamp(rail_sel_ + in.move_y, 0, quit_rail_index);
     if (rail_sel_ < category_count && rail_sel_ != category_) {
       category_ = rail_sel_;
@@ -2754,6 +2767,7 @@ void SimpleSettingsDialog::OnDraw(ImGuiIO& io) {
       content_scroll_anim_ = 0.0f;
       delete_confirmation_.clear();
       quit_confirmation_ = false;
+      return_home_confirmation_ = false;
       ImGui::End();
       ImGui::PopStyleVar(2);
       return;  // redraw the selected category before accepting row input

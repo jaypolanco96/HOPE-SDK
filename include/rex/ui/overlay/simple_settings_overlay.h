@@ -74,6 +74,7 @@ class SimpleSettingsDialog final : public ImGuiDialog {
   bool visible() const { return visible_; }
   void SetSaveCallbacks(LoadSavesCallback load, DeleteSaveCallback remove);
   void ShowMainMenu();
+  void SetReturnHomeCallback(CloseGameCallback callback) { return_home_ = std::move(callback); }
 
  protected:
   void OnDraw(ImGuiIO& io) override;
@@ -99,6 +100,7 @@ class SimpleSettingsDialog final : public ImGuiDialog {
   SaveProfileCallback save_profile_;
   CloseSettingsCallback close_settings_;
   CloseGameCallback close_game_;
+  CloseGameCallback return_home_;
   RestartGameCallback restart_game_;
   PollGamepadCallback poll_gamepad_;
   LoadSavesCallback load_saves_;
@@ -109,6 +111,7 @@ class SimpleSettingsDialog final : public ImGuiDialog {
   std::string save_error_;
   std::string profile_save_status_;
   bool quit_confirmation_ = false;
+  bool return_home_confirmation_ = false;
   SimpleProfileState profiles_;
   bool visible_ = false;
 
