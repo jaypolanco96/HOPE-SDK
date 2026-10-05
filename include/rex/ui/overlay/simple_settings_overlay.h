@@ -75,7 +75,6 @@ class SimpleSettingsDialog final : public ImGuiDialog {
   void SetSaveCallbacks(LoadSavesCallback load, DeleteSaveCallback remove);
   void ShowMainMenu();
   void SetReturnHomeCallback(CloseGameCallback callback) { return_home_ = std::move(callback); }
-  void SetGameActivitiesCallback(CloseGameCallback callback) { game_activities_ = std::move(callback); }
 
  protected:
   void OnDraw(ImGuiIO& io) override;
@@ -102,7 +101,6 @@ class SimpleSettingsDialog final : public ImGuiDialog {
   CloseSettingsCallback close_settings_;
   CloseGameCallback close_game_;
   CloseGameCallback return_home_;
-  CloseGameCallback game_activities_;
   RestartGameCallback restart_game_;
   PollGamepadCallback poll_gamepad_;
   LoadSavesCallback load_saves_;

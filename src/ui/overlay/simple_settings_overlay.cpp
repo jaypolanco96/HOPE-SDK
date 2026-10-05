@@ -1322,7 +1322,7 @@ void SimpleSettingsDialog::BuildRows(std::vector<RowSpec>& rows, int category) {
       if (return_home_confirmation_) {
         action("Keep Playing", "Return to this session.",
                [this] { return_home_confirmation_ = false; });
-        action("Confirm Return to Home Screen", "Close this session and open the launcher. Wait for the saving indicator to finish. Unsaved progress may be lost.",
+        action("Confirm Return to HOPE Launcher", "Close this session and open the launcher. Wait for the saving indicator to finish. Unsaved progress may be lost.",
                [this] { return_home_confirmation_ = false; Hide(); if (return_home_) return_home_(); }, true);
       } else if (quit_confirmation_) {
         action("Cancel", "Keep playing. Unsaved progress can be lost when quitting.",
@@ -1331,9 +1331,7 @@ void SimpleSettingsDialog::BuildRows(std::vector<RowSpec>& rows, int category) {
                [this] { Hide(); if (close_game_) close_game_(); }, true);
       } else {
         action("Resume Game", "Return to your current session.", [this] { Hide(); });
-        if (game_activities_) action("Challenges, Map & Replay", "Open the original game's activities menu. This screen still uses the game's original presentation.",
-               [this] { Hide(); game_activities_(); });
-        if (return_home_) action("Return to Home Screen", "Close this session and open the PC home screen to choose a career or start fresh. Saved progress is retained; finish saving first.",
+        if (return_home_) action("Return to HOPE Launcher", "Close this session and open HOPE. This does not return to Skate 3's title screen. Finish saving first.",
                [this] { return_home_confirmation_ = true; row_index_ = 0; });
         action("Graphics Settings", "Adjust ambient occlusion, anti-aliasing, fog and other effects.",
                [this] { category_ = rail_sel_ = 2; row_index_ = 0; });
@@ -2739,7 +2737,7 @@ void SimpleSettingsDialog::OnDraw(ImGuiIO& io) {
   dl->AddRectFilled(ImVec2(0.0f, 0.0f), io.DisplaySize, IM_COL32(6, 9, 11, 133));
 
   // ---- Title ----
-  dl->AddText(bold, title_size, ImVec2(Snap(rail_x), title_y), kColText, "SKATE 3 / PC HOME");
+  dl->AddText(bold, title_size, ImVec2(Snap(rail_x), title_y), kColText, "HOPE / PC SETTINGS");
   if (pending) {
     const char* chip_text = "RESTART REQUIRED TO APPLY";
     float chip_size = font_px(14.0f * s);

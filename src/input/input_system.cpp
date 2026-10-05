@@ -205,9 +205,9 @@ X_RESULT InputSystem::GetState(uint32_t user_index, X_INPUT_STATE* out_state) {
   }
 
   const uint16_t menu_chord_buttons = ChordMaskFromSpec(REXCVAR_GET(menu_chord));
-  if (pc_pause_eligible_ && user_index < pc_menu_inputs_.size()) {
+  if (pc_menu_chord_routing_ && user_index < pc_menu_inputs_.size()) {
     const auto routed = pc_menu_inputs_[user_index].Update(
-        static_cast<uint16_t>(merged.gamepad.buttons), pc_pause_eligible_(),
+        static_cast<uint16_t>(merged.gamepad.buttons),
         menu_chord_buttons, static_cast<bool>(menu_chord_callback_));
     merged.gamepad.buttons = routed.guest_buttons;
     if (routed.open_menu) menu_chord_callback_();
@@ -219,7 +219,7 @@ X_RESULT InputSystem::GetState(uint32_t user_index, X_INPUT_STATE* out_state) {
       menu_chord_callback_();
     }
     menu_chord_down_ = menu_chord_down;
-    }
+  }
 
   if (active_callback_ && !active_callback_()) {
     std::memset(&merged.gamepad, 0, sizeof(merged.gamepad));
