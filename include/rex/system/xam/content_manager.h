@@ -145,6 +145,10 @@ class ContentManager {
   ContentManager(KernelState* kernel_state, const std::filesystem::path& root_path);
   ~ContentManager();
 
+  // Host save UI uses the same layout/portable override as guest content.
+  std::filesystem::path GetSavedGameRoot(uint64_t xuid, uint32_t title_id);
+  std::filesystem::path GetSavedGameHeaderRoot(uint64_t xuid, uint32_t title_id);
+
   std::vector<XCONTENT_AGGREGATE_DATA> ListContent(uint32_t device_id, uint64_t xuid,
                                                    XContentType content_type,
                                                    uint32_t title_id = -1);

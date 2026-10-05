@@ -30,6 +30,11 @@ struct SimpleProfileState {
   int selected_index = 0;
 };
 
+struct SimpleSaveInfo {
+  std::string id;
+  std::string label;
+};
+
 // Raw pad snapshot for overlay navigation (host-side, already merged across
 // pads). Poll callback runs on the UI thread every drawn frame.
 struct SimpleSettingsGamepad {
@@ -48,6 +53,9 @@ class SimpleSettingsDialog final : public ImGuiDialog {
   using CloseGameCallback = std::function<void()>;
   using RestartGameCallback = std::function<void()>;
   using PollGamepadCallback = std::function<SimpleSettingsGamepad()>;
+  using LoadSavesCallback = std::function<std::vector<SimpleSaveInfo>()>;
+  // Empty result means queued successfully; otherwise show the error.
+  using DeleteSaveCallback = std::function<std::string(const std::string&)>;
 
   SimpleSettingsDialog(ImGuiDrawer* drawer, std::filesystem::path config_path,
                        LoadProfilesCallback load_profiles, SaveProfileCallback save_profile,
@@ -64,6 +72,8 @@ class SimpleSettingsDialog final : public ImGuiDialog {
   // level instead of instantly closing.
   void NavigateBack();
   bool visible() const { return visible_; }
+  void SetSaveCallbacks(LoadSavesCallback load, DeleteSaveCallback remove);
+  void ShowMainMenu();
 
  protected:
   void OnDraw(ImGuiIO& io) override;
@@ -91,6 +101,13 @@ class SimpleSettingsDialog final : public ImGuiDialog {
   CloseGameCallback close_game_;
   RestartGameCallback restart_game_;
   PollGamepadCallback poll_gamepad_;
+  LoadSavesCallback load_saves_;
+  DeleteSaveCallback delete_save_;
+  std::vector<SimpleSaveInfo> saves_;
+  int save_index_ = 0;
+  std::string delete_confirmation_;
+  std::string save_error_;
+  bool quit_confirmation_ = false;
   SimpleProfileState profiles_;
   bool visible_ = false;
 
@@ -118,6 +135,9 @@ class SimpleSettingsDialog final : public ImGuiDialog {
   // Live setting values (hot cvars, applied and saved on change).
   bool renderer_native_ = true;
   bool ssao_ = true;
+  bool ssao_full_res_ = false;
+  bool fog_ = true;
+  bool haze_ = true;
   bool static_shadows_ = true;
   bool shadow_pcss_ = true;
   bool bloom_ = true;

@@ -89,6 +89,14 @@ void ContentManager::SetContentTypeRoot(XContentType content_type, std::filesyst
   content_type_roots_[uint32_t(content_type)] = std::move(root);
 }
 
+std::filesystem::path ContentManager::GetSavedGameRoot(uint64_t xuid, uint32_t title_id) {
+  return ResolvePackageRoot(xuid, XContentType::kSavedGame, title_id);
+}
+
+std::filesystem::path ContentManager::GetSavedGameHeaderRoot(uint64_t xuid, uint32_t title_id) {
+  return ResolvePackageHeaderPath("_", xuid, title_id, XContentType::kSavedGame).parent_path();
+}
+
 std::filesystem::path ContentManager::ResolvePackageRoot(uint64_t xuid, XContentType content_type,
                                                          uint32_t title_id) {
   if (title_id == kCurrentlyRunningTitleId) {

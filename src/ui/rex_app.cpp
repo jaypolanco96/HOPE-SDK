@@ -885,6 +885,7 @@ void ReXApp::OnDestroy() {
   }
   window_.reset();
   runtime_.reset();
+  OnRuntimeDestroyed();
 }
 
 void ReXApp::SetGuestFrameStats(ui::DebugOverlayDialog::FrameStatsProvider provider) {

@@ -116,6 +116,10 @@ class ReXApp : public ui::WindowedApp, public ui::WindowListener, public ui::Win
   /// Called before cleanup begins. Release custom resources here.
   virtual void OnShutdown() {}
 
+  // Runtime and its content handles have been destroyed. Host-side save
+  // maintenance must wait until this point rather than OnShutdown().
+  virtual void OnRuntimeDestroyed() {}
+
   /// Called after path defaults are computed, before Runtime is constructed.
   /// Override to adjust game/user/update data paths programmatically.
   virtual void OnConfigurePaths(PathConfig& paths) { (void)paths; }
