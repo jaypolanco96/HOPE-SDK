@@ -102,7 +102,7 @@ constexpr std::array<AdvancedToggle, 5> kAdvancedToggles = {{
  {"skate3_native_render_scene_ssr", "Reflections (Experimental)", "Screen-space reflections on glass and water. Requires HDR lighting. May show noise and smearing.", false},
  {"skate3_native_render_scene_tex_mips", "Texture Mipmaps", "Filters distant textures to reduce shimmering.", true},
  {"skate3_native_render_scene_decals", "Graffiti and Decals", "Authored surface artwork and paint.", true},
- {"skate3_native_render_scene_quadlists", "Particles (Experimental)", "Incomplete particle draw path: sprite textures are missing and particles may appear as floating white squares. Off by default.", false}
+ {"skate3_native_render_scene_quadlists", "Particles (Experimental)", "Soft dust sprites with transparent edges. Original effect textures and colors are not yet mapped. Off by default.", false}
 }};
 struct AdvancedRange {
  const char* cvar; const char* label; const char* description;
