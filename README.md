@@ -1,3 +1,14 @@
+# HOPE SDK
+
+Private development dependency for [HOPE](https://github.com/jaypolanco96/HOPE).
+This preserves the Skate-specific ReXGlue work by [mchughalex](https://github.com/mchughalex/rexglue-skate3), itself built on [ReXGlue](https://github.com/rexglue/rexglue-sdk).
+
+HOPE adds Windows build compatibility, PC settings/input routing, save-path and recovery support, and advanced settings controls. These are fork additions; they are not represented as upstream releases. Existing source/dependency notices remain intact. Game files, player saves and installed binaries are not included.
+
+The HOPE parent repository pins a tested SDK revision. Clone the parent with submodules rather than selecting an arbitrary upstream SDK version. The upstream documentation is retained below.
+
+---
+
 > [!CAUTION]
 > This project is in early development. Expect things to not work quite right and there to be significant changes and breaking public API updates as development progresses. Contributions and feedback are welcome, but please be aware that the codebase is still evolving rapidly.
 
