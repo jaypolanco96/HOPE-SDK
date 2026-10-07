@@ -29,6 +29,14 @@ bool TextureInfo::Prepare(const xe_gpu_texture_fetch_t& fetch, TextureInfo* out_
 
   std::memset(out_info, 0, sizeof(TextureInfo));
 
+  // Fetch constants are guest data, and may be stale during texture teardown.
+  // Reject invalid shapes through the existing failure result rather than
+  // interrupting the render thread with a host assertion dialog.
+  if ((fetch.stacked && fetch.dimension != DataDimension::k2DOrStacked) ||
+      (fetch.dimension == DataDimension::kCube && fetch.size_2d.stack_depth != 5)) {
+    return false;
+  }
+
   auto& info = *out_info;
 
   info.format = fetch.format;
@@ -42,7 +50,6 @@ bool TextureInfo::Prepare(const xe_gpu_texture_fetch_t& fetch, TextureInfo* out_
       // we treat 1D textures as 2D
       info.dimension = DataDimension::k2DOrStacked;
       info.width = fetch.size_1d.width;
-      assert_true(!fetch.stacked);
       break;
     case xenos::DataDimension::k2DOrStacked:
       info.width = fetch.size_2d.width;
@@ -56,18 +63,14 @@ bool TextureInfo::Prepare(const xe_gpu_texture_fetch_t& fetch, TextureInfo* out_
       info.width = fetch.size_3d.width;
       info.height = fetch.size_3d.height;
       info.depth = fetch.size_3d.depth;
-      assert_true(!fetch.stacked);
       break;
     case xenos::DataDimension::kCube:
       info.width = fetch.size_2d.width;
       info.height = fetch.size_2d.height;
-      assert_true(fetch.size_2d.stack_depth == 5);
       info.depth = fetch.size_2d.stack_depth;
-      assert_true(!fetch.stacked);
       break;
     default:
-      assert_unhandled_case(info.dimension);
-      break;
+      return false;
   }
   info.pitch = fetch.pitch << 5;
 
