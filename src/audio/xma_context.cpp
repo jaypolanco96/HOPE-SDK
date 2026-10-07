@@ -1074,10 +1074,11 @@ void XmaContext::DecodeOldFrame(XMA_CONTEXT_DATA* data) {
     uint8_t* packet = nullptr;
     bool frame_last_split = false;
 
+    // Validate guest-provided offsets before BitStream::SetOffset asserts.
+    // A stale end-of-buffer offset must follow the existing buffer recovery
+    // path rather than stopping the audio thread in an assertion dialog.
     BitStream stream(current_input_buffer, current_input_size * 8);
-    stream.SetOffset(data->input_buffer_read_offset);
-
-    if (data->input_buffer_read_offset > current_input_size * 8) {
+    if (!stream.TrySetOffset(data->input_buffer_read_offset)) {
       REXAPU_ERROR("XmaContext {} old: input offset {} exceeds buffer size {}", id(),
                    uint32_t(data->input_buffer_read_offset), current_input_size * 8);
       SwapInputBuffer(data);

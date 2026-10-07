@@ -37,6 +37,8 @@ class BitStream {
 
   void Advance(size_t num_bits);
   void SetOffset(size_t offset_bits);
+  // For untrusted packet offsets: reject without changing the cursor.
+  bool TrySetOffset(size_t offset_bits);
   size_t BitsRemaining();
 
   // Note: num_bits MUST be in the range 0-57 (inclusive)

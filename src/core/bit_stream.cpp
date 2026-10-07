@@ -28,6 +28,14 @@ void BitStream::SetOffset(size_t offset_bits) {
   offset_bits_ = std::min(offset_bits, size_bits_);
 }
 
+bool BitStream::TrySetOffset(size_t offset_bits) {
+  if (offset_bits > size_bits_) {
+    return false;
+  }
+  SetOffset(offset_bits);
+  return true;
+}
+
 size_t BitStream::BitsRemaining() {
   return size_bits_ - offset_bits_;
 }
@@ -37,14 +45,21 @@ uint64_t BitStream::Peek(size_t num_bits) {
   // 57 = 7 * 8 + 1 - that can only span a maximum of 8 bytes.
   // We can't read in 9 bytes (easily), so we limit it.
   assert_false(num_bits > 57);
-  assert_false(offset_bits_ + num_bits > size_bits_);
+  assert_false(num_bits > BitsRemaining());
+  if (num_bits == 0) {
+    return 0;
+  }
 
   size_t offset_bytes = offset_bits_ >> 3;
   size_t rel_offset_bits = offset_bits_ - (offset_bytes << 3);
 
   // offset -->
   // ..[junk]..| target bits |....[junk].............
-  uint64_t bits = *(uint64_t*)(buffer_ + offset_bytes);
+  // Packet trailers may contain fewer than eight bytes. Do not load beyond
+  // the supplied buffer (or use an unaligned uint64_t pointer).
+  uint64_t bits = 0;
+  const size_t bytes_to_read = (rel_offset_bits + num_bits + 7) / 8;
+  std::memcpy(&bits, buffer_ + offset_bytes, bytes_to_read);
 
   // We need the data in little endian.
   // TODO: Have a flag specifying endianness of data?
